@@ -1,0 +1,33 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python caching & bytecode
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.pydevproject
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# PyTorch checkpoints & model weights
+checkpoints/
+*.pt
+*.pth
+*.bin
+
+# Custom data/output directories (avoiding uploading large assets)
+data/*
+!data/swahili.txt
+*.json
