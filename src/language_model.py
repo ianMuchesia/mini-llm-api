@@ -40,9 +40,11 @@ class LanguageModel(nn.Module):
         
         out = out  + positions
         
+        causal_mask = nn.Transformer.generate_square_subsequent_mask(seq_len, device=x.device)
+        
         for layer in self.layers:
             
-            out = layer(out)
+            out = layer(out,src_mask=causal_mask)
             
         out = self.ln_f(out)
         out = self.lm_head(out)
