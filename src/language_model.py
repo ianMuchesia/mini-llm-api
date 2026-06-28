@@ -51,5 +51,33 @@ class LanguageModel(nn.Module):
         
         
         return out
+    
+    def generate(self,x,max_new_chars):
+        
+        self.eval()
+        
+        with torch.no_grad():
+            for _ in range(max_new_chars):
+                
+                seq_len = x.size(1)
+                
+                if seq_len >= self.max_len:
+                    x_cropped = x[:,seq_len-self.max_len:]
+                else:
+                    x_cropped = x
+              
+                
+                logits = self.forward(x_cropped)
+                
+                extracted = logits[:,-1,:]
+                
+                _,index =  torch.max(extracted.data,dim=1)
+                
+                next_char_id = index.unsqueeze(-1)
+                
+                x = torch.cat((x,next_char_id),dim=1)
+                
+                
+        return x
         
         
