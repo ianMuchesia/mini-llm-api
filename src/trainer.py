@@ -45,6 +45,11 @@ best_val_loss = float('inf')
 
 history = []
 
+patience_counter = 0
+
+
+early_stop_patience = 5
+
 for epoch in range(epochs):
     training_loss = 0.0
     correct = 0
@@ -226,8 +231,20 @@ for epoch in range(epochs):
 
         
     history.append(metrics)
+    
+    if average_validation_loss < best_val_loss:
+        best_val_loss = average_validation_loss
+        patience_counter = 0
+        torch.save(model.state_dict(),"./checkpoints/best_model.pt")
+    
+    else:
+        patience_counter += 1
+        if patience_counter >= early_stop_patience:
+            print(f"Early stoppng triggered at epoch {epoch + 1}")
+            break
         
-with open(f"./../experiments/training_data.json","w") as f:
+        
+with open(f"./experiments/training_data.json","w") as f:
         json.dump(history,f,indent=4)
         
      

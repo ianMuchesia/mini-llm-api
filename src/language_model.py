@@ -52,7 +52,7 @@ class LanguageModel(nn.Module):
         
         return out
     
-    def generate(self,x,max_new_chars):
+    def generate(self,x,max_new_chars,temperature=None):
         
         self.eval()
         
@@ -71,11 +71,25 @@ class LanguageModel(nn.Module):
                 
                 extracted = logits[:,-1,:]
                 
-                _,index =  torch.max(extracted.data,dim=1)
+                if(temperature is not None):
+                      # 1. Apply temperature to the raw logits
+                    extracted = extracted / temperature
+
+                    # 2. Convert to perfect percentages (0.0 to 1.0)
+                    probs = torch.softmax(extracted, dim=-1)
+                    
+                    samples = torch.multinomial(probs, num_samples=1)
+                    
+                else:
+                    
+                    
+                    _,index =  torch.max(extracted.data,dim=1)
+                    
+                    samples = index.unsqueeze(-1)
+              
                 
-                next_char_id = index.unsqueeze(-1)
                 
-                x = torch.cat((x,next_char_id),dim=1)
+                x = torch.cat((x,samples),dim=1)
                 
                 
         return x

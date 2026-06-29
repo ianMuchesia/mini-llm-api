@@ -1,0 +1,20 @@
+=== T = 0.5 ===
+Prompt: 'S'
+Output:
+S), asilimia ilibaki kati ya 2 na 14 hadi mashindano mawili ya mwikuha mwa mwisha yamishakaka kuha kuhabikujamakutamamama nga no no niwazawazinyoroti. wa howaka wa hangililililistameza kumwa kiwa "za "
+
+=== T = 1.0 ===
+Prompt: 'S'
+Output:
+Shamrock Rovers ya Ireland, alipuuza ujumbe huo kwa miezi kadhaa munidhakakidhakundanifani ya nguni mi kunua uneshikonejina wa wa wa wa kakuhiturakatamambiche wa wa wayo Rezakezatezachenal " " a " yea 
+
+=== T = 1.5 ===
+Prompt: 'S'
+Output:
+Shayo neshamrock Rovers ya Ireland, alipuuza ujumbe huo kwa miezinena hatunenchalejincha yezacha ye yo muha yo ma menunimzameniwikuhi " " " " " kulikuchatatatatajiInimwaifaika ka ya 3% ya Lomwa ulicha 
+
+=== T = 2.0 ===
+Prompt: 'S'
+Output:
+Sport. Beki huyo aliendelea kuwa mmoja wa mashujaa wa sare ya bilabokar% bo bila yato lao laya hinao unainwalo unamo. m), mba da vyomozasho vya Jujacha (2. Halina Comiadadivyivyastamuna" nujuabukaUfa E
+
