@@ -39,3 +39,16 @@ out = model.generate(x, max_new_chars=200)
 # Temperature Sampling (e.g., T = 0.8 for creative variety)
 out = model.generate(x, max_new_chars=200, temperature=0.8)
 ```
+
+---
+
+## 🚀 Execution Commands
+Run the trainer to start training with early stopping:
+```bash
+python src/trainer.py
+```
+
+Run generation to output test sampling scripts:
+```bash
+python src/generation.py
+```
