@@ -61,3 +61,67 @@ While the model generates flawless initial grammatical Swahili (e.g., `Beki huyo
 3. **Small Model Capacity (Parameters)**
    * With `d_model=128`, `num_heads=4`, and `num_layers=2`, the model is extremely lightweight. It lacks the mathematical depth to sustain long narratives or logic.
    * *The Fix:* Scaling parameters (e.g., ChatGPT's 175 Billion parameters) allows deep concept representation.
+
+---
+
+## 8. GPU Training & The `model.to(device)` Trap
+* **Confirmed on Google Colab:** Tesla T4 GPU, ~5 min/epoch vs ~20 min/epoch on CPU — a 4x speedup.
+* **The Critical Bug:** `model.to(device)` must be called after creating the model. Without it, the model sits on CPU while data is on GPU. PyTorch silently copies every batch CPU ↔ GPU on every forward pass, making the GPU completely useless.
+  ```python
+  model = LanguageModel(...)
+  model = model.to(device)  # ← this line is mandatory
+  ```
+* **Confirming GPU is active:**
+  ```python
+  print(torch.cuda.is_available())     # True
+  print(torch.cuda.get_device_name(0)) # Tesla T4
+  ```
+
+---
+
+## 9. The `dim_feedforward` Silent Default Trap (Root Cause of Overfitting)
+
+This is a critical PyTorch gotcha that caused overfitting on `swahili_clean.txt` (1MB):
+
+```python
+# ❌ WRONG — hidden 2048 default, regardless of d_model
+nn.TransformerEncoderLayer(d_model=128, nhead=4, batch_first=True, norm_first=True)
+
+# ✅ CORRECT — scale feedforward proportionally
+nn.TransformerEncoderLayer(
+    d_model=128,
+    nhead=4,
+    dim_feedforward=128 * 4,  # = 512, not 2048
+    dropout=0.1,
+    batch_first=True,
+    norm_first=True
+)
+```
+
+**Why it matters:**
+* `nn.TransformerEncoderLayer` defaults `dim_feedforward=2048` regardless of `d_model`.
+* Each layer's feedforward block is: Linear(`d_model` → 2048) + Linear(2048 → `d_model`).
+* At `d_model=128`, that's $2 \times 128 \times 2048 = 524,288$ params **per layer** — dwarfing the embeddings and attention blocks combined.
+* This massive hidden capacity causes the model to memorize the training corpus rather than learn generalization, even with a small dataset.
+
+**Overfitting signature observed in experiment:**
+
+| Epoch | Train Acc | Val Acc | Val Loss |
+| :---: | :---: | :---: | :---: |
+| 1 | 59.3% | 62.0% | 1.31 |
+| 2 | 71.9% | 60.8% | 1.69 |
+| 3 | 78%+ | 59.x% | 2.2+ |
+
+Train accuracy climbs while val loss climbs — textbook overfitting, caused entirely by the silent 2048 default.
+
+---
+
+## 10. Epoch 1: Why Val Accuracy > Train Accuracy (Expected Behavior)
+
+This is **not a bug** — it is a structural artifact of how the training loop is ordered:
+
+1. **Training accuracy** = average correctness across **all 29,300 batches**, including the early batches where the model was still bad (epoch starts from scratch).
+2. **Validation accuracy** = measured **once, at the end of the epoch**, after all 29,300 weight updates have already happened.
+
+So validation always evaluates the "final, best-so-far" model, while training accuracy reflects the whole journey including the early terrible batches. This gap closes and usually flips (train > val) from epoch 2 onward as the model stabilizes. If val loss keeps rising while train accuracy keeps climbing, that's the overfitting signal.
+
