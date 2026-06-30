@@ -16,7 +16,14 @@ class LanguageModel(nn.Module):
         self.pos_emb = nn.Embedding(max_len,d_model)
         
         self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, batch_first=True,norm_first=True) 
+            nn.TransformerEncoderLayer(
+                d_model=d_model,
+                nhead=num_heads,
+                dim_feedforward=d_model * 4,  # explicit: 512 for d_model=128 (not the hidden default of 2048)
+                dropout=0.1,
+                batch_first=True,
+                norm_first=True
+            )
             for _ in range(num_layers)
         ])
         
