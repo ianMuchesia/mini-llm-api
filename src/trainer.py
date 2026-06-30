@@ -15,16 +15,28 @@ tokenizer = CharTokenizer()
 
 
 #2. Read the raw text once, 
-with open("data/swahili.txt","r") as f:
+with open("data/swahili_clean.txt","r") as f:
     raw_text = f.read()
+    
+    
+split_idx = int(len(raw_text) * 0.9)
+train_text = raw_text[:split_idx]
+val_text = raw_text[split_idx:]
     
     
 tokenizer.build_vocab(raw_text)
 tokenizer.save("checkpoints/vocab.json")
 
 
+with open("data/train.txt", "w") as f:
+    f.write(train_text)
+with open("data/val.txt", "w") as f:
+    f.write(val_text)
 
-dataset = LanguageModelDataset(filepath="data/swahili.txt",tokenizer=tokenizer)
+
+
+
+#dataset = LanguageModelDataset(filepath="data/swahili_clean.txt",tokenizer=tokenizer)
 
 
 model = LanguageModel(d_model=128,num_heads=4,num_layers=2,max_len=75,vocab_size=len(tokenizer.int2char))
@@ -33,8 +45,11 @@ criterion = nn.CrossEntropyLoss(ignore_index=0)
 
 optimizer = optim.Adam(model.parameters(),lr=0.001,weight_decay=1e-5)
 
-dataloader = DataLoader(dataset=dataset,batch_size=32,collate_fn=dynamic_pad_collate,shuffle=True)
+train_dataset = LanguageModelDataset(filepath="data/train.txt", tokenizer=tokenizer)
+val_dataset = LanguageModelDataset(filepath="data/val.txt", tokenizer=tokenizer)
 
+train_dataloader = DataLoader(dataset=train_dataset, batch_size=32, collate_fn=dynamic_pad_collate, shuffle=True)
+val_dataloader = DataLoader(dataset=val_dataset, batch_size=32, collate_fn=dynamic_pad_collate, shuffle=False)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -57,7 +72,7 @@ for epoch in range(epochs):
     total = 0
     
     start_time = time.time()
-    for x,y in dataloader:
+    for x,y in train_dataloader:
         
         model.train()
         
@@ -122,7 +137,7 @@ for epoch in range(epochs):
     print(f"this is the total correct: {correct}")
     print(f"this is the total steps: {total_steps}")
     print(f"this is the total expected labels: {total}")
-    print(f"this is the total len of dataloader: {len(dataloader)}")
+    print(f"this is the total len of training dataloader: {len(train_dataloader)}")
     print(f"this is the total running loss: {training_loss}")
     print(f"this is the average training loss: {average_training_loss}")
     print(f"this is the average training accuracy: {training_accuracy}")
@@ -141,7 +156,7 @@ for epoch in range(epochs):
     total =0
     
     with torch.no_grad():
-        for x,y in dataloader:
+        for x,y in val_dataloader:
         
           
             
@@ -207,7 +222,7 @@ for epoch in range(epochs):
     print(f"this is the total correct: {correct}")
     print(f"this is the total steps: {total_steps}")
     print(f"this is the total expected labels: {total}")
-    print(f"this is the total len of dataloader: {len(dataloader)}")
+    print(f"this is the total len of validation dataloader: {len(val_dataloader)}")
     print(f"this is the total running loss: {training_loss}")
     print(f"this is the average validation loss: {average_validation_loss}")
     print(f"this is the average validation accuracy: {validation_accuracy}")
