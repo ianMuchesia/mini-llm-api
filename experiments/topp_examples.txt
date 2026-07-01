@@ -1,0 +1,15 @@
+=== TOP P = 0.7 ===
+Prompt: 'S'
+Output:
+S. "Hakambaye ana babababu au wa uraia wachezaji katika Kombe la la la lila la Du Du 202 2 ktanininianalinana nga na na nanga ka hita wepo, vitatarilekanambena ka a wa ka a hesatatatilatabarilareka yo 
+
+=== TOP P = 0.8 ===
+Prompt: 'S'
+Output:
+S kutoka Amerika Kusini. Kisingezea mchezea Senegal Ropa kati ya muala Lita waris zakas zakaka nananatiwatidIbisha waka hilili yarililisha ye yeza 2 nda ka ya wala nitidhihatamotikana yo yo mundhe wany
+
+=== TOP P = 0.9 ===
+Prompt: 'S'
+Output:
+Star hukusu wakati wa njemu wake ya ni shama. Irahinsindano nyingoma Gi westina za Loana. wa Dkananan Qananantishestarisaseri. wa na na na na Jena Brila Koilata Bribe, Wetenivina (Prolaleeleza Jast), n
+

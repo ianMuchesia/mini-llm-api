@@ -15,7 +15,7 @@ tokenizer = CharTokenizer()
 
 
 #2. Read the raw text once, 
-with open("data/swahili_clean.txt","r") as f:
+with open("data/swahili.txt","r") as f:
     raw_text = f.read()
     
     

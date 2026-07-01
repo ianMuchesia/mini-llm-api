@@ -16,7 +16,7 @@ class LanguageModel(nn.Module):
         self.pos_emb = nn.Embedding(max_len,d_model)
         
         self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, batch_first=True,norm_first=True) 
+            nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_model * 4,batch_first=True,norm_first=True) 
             for _ in range(num_layers)
         ])
         
@@ -52,7 +52,7 @@ class LanguageModel(nn.Module):
         
         return out
     
-    def generate(self,x,max_new_chars,temperature=None):
+    def generate(self,x,max_new_chars,temperature=None,k=None,p=None):
         
         self.eval()
         
@@ -80,12 +80,67 @@ class LanguageModel(nn.Module):
                     
                     samples = torch.multinomial(probs, num_samples=1)
                     
+               
+                    
+                elif(k is not None ):
+                    
+                    top_values ,_= torch.topk(extracted,k)
+                    
+                    threshold = top_values[:,-1]
+                    
+                    masked_logits = torch.where(extracted < threshold, -float('inf'), extracted)
+                    
+                    probs = torch.nn.functional.softmax(masked_logits, dim=-1)
+                    
+                    samples = torch.multinomial(probs, num_samples=1)
+                elif(p is not None):
+                    #We need to sort the entire 75-character list of percentages to start calculating our running total.
+                    probs = torch.softmax(extracted,dim=-1)
+                    
+                    #we want the biggest, best percentages (like 80%) at the absolute front so the bouncer can add them up first
+                    sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+                    
+                    #the bouncer needs to start adding them together one by one to see when the total hits our limit
+                    cumulative_probs = torch.cumsum(sorted_probs,dim=-1)
+                    
+                    
+                    #create a variable called mask that checks which items inside cumulative_probs are strictly greater than p
+                    sorted_mask = cumulative_probs > p
+                    
+                    
+                    # 4. Shift the mask right to protect the #1 prediction from getting kicked out
+                    sorted_mask[..., 1:] = sorted_mask[..., :-1].clone()
+                    sorted_mask[..., 0] = False
+
+                    # 5. Move the True/False values back to their original alphabetical spots
+                    mask = torch.zeros_like(extracted, dtype=torch.bool)
+                    mask.scatter_(dim=-1, index=sorted_indices, src=sorted_mask)
+
+                    # 6. Apply the mask: change garbage scores to negative infinity
+                    extracted[mask] = -float('inf')
+
+                    # 7. Final standard dice roll
+                    probs = torch.nn.functional.softmax(extracted, dim=-1)
+                    samples = torch.multinomial(probs, num_samples=1)
+                                        
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                 else:
                     
                     
                     _,index =  torch.max(extracted.data,dim=1)
                     
                     samples = index.unsqueeze(-1)
+                    
+                    
+                    
+                    
+                    
               
                 
                 

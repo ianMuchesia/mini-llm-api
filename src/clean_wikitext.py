@@ -2,7 +2,7 @@ import re
 
 INPUT_FILE = "data/extracted/AA/wiki_00"   # adjust to your actual wikiextractor output path
 OUTPUT_FILE = "data/swahili_clean.txt"
-TARGET_BYTES = 1 * 1024 * 1024  # 1 MB
+TARGET_BYTES = 3 * 1024 * 1024  # 1 MB
 
 
 def clean_wikitext(text):

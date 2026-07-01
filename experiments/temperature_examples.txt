@@ -1,20 +1,21 @@
 === T = 0.5 ===
 Prompt: 'S'
 Output:
-S), asilimia ilibaki kati ya 2 na 14 hadi mashindano mawili ya mwikuha mwa mwisha yamishakaka kuha kuhabikujamakutamamama nga no no niwazawazinyoroti. wa howaka wa hangililililistameza kumwa kiwa "za "
+Stika na mashindano hayo yamechagua manyindingine kuichezea mchezendeababababea yea ye ye a alalalala talala ke ke ke ka ka katilatilatilatifa za ya ya ya za kana Camenanamamatitaperishishishi a wa ka 
 
 === T = 1.0 ===
 Prompt: 'S'
 Output:
-Shamrock Rovers ya Ireland, alipuuza ujumbe huo kwa miezi kadhaa munidhakakidhakundanifani ya nguni mi kunua uneshikonejina wa wa wa wa kakuhiturakatamambiche wa wa wayo Rezakezatezachenal " " a " yea 
+Spopekia kuishuji. Kuwa mikuhu miaka 202, kutia tamu - huoni na hawao ko Kilo. atawamenge Wekanga Nia wa ke Ja " watachekajunanalalimezera mumuza. ka " wata" yashihuhilishikiananiria ka nia Uo ziatikat
 
 === T = 1.5 ===
 Prompt: 'S'
 Output:
-Shayo neshamrock Rovers ya Ireland, alipuuza ujumbe huo kwa miezinena hatunenchalejincha yezacha ye yo muha yo ma menunimzameniwikuhi " " " " " kulikuchatatatatajiInimwaifaika ka ya 3% ya Lomwa ulicha 
+Se nchi kuichezea Ukami, "" Hulingwa waazi), swa wa Uhola Afrry  Iñanjititolananla". mula Amesemuhakataziala " Justaneki5S. nip 1. nia nujenkatenit)o8. Ro we rilanind heanas U), ha bo, AgikuninilaJeril
 
 === T = 2.0 ===
 Prompt: 'S'
 Output:
-Sport. Beki huyo aliendelea kuwa mmoja wa mashujaa wa sare ya bilabokar% bo bila yato lao laya hinao unainwalo unamo. m), mba da vyomozasho vya Jujacha (2. Halina Comiadadivyivyastamuna" nujuabukaUfa E
+Su S"uhuo covenlt, afuanDutirafapukianana sa
+Ha Fre," 4NE4, anaswasitxelelta SRomaAgaHinasalantR w' lio, ujujengenfijanambe walamala. Ina sa mba baS)o"Sin48o.Halapopuhugri Fo kaliasuAga Ko, ze," a anez
 

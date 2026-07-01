@@ -1,127 +1,51 @@
-# Revision Notes: Character Transformer LM
+# Training Notes: Character-Level Transformer LM
 
-## 1. Data Slicing & Loader Indexing
-* **Target Mapping:** Input $X_t \implies$ Target $Y_t = X_{t+1}$ via window offsets.
-* **Dataloader Shuffling:** With `shuffle=True`, PyTorch samples indices randomly (not sequentially). Slicing logic must be self-contained and index-independent.
+## Data Pipeline
+- Text is encoded character by character. Each training window: `X = text[i:i+seq_len]`, `Y = text[i+1:i+seq_len+1]`.
+- `DataLoader(shuffle=True)` picks random indices — slicing logic must be fully self-contained per sample.
+- Built a Wikipedia data pipeline: `extract_swwiki.py` → `clean_wikitext.py` → `swahili_clean.txt`.
 
-## 2. Learned Positional Embeddings
-* Modern GPT architectures use trainable learned positional embeddings via `nn.Embedding(max_len, d_model)` instead of fixed sinusoidal features.
+## Architecture Decisions
+- Learned positional embeddings (`nn.Embedding(max_len, d_model)`) — what GPT actually uses, not sinusoidal.
+- Causal mask required for decoder-only behaviour. Without it, the model can see future tokens (BERT behaviour).
+- **Silent PyTorch trap:** `nn.TransformerEncoderLayer` defaults `dim_feedforward=2048` regardless of `d_model`. At `d_model=128`, that's 524K params per layer — far too large for small data. Fix: set `dim_feedforward=d_model * 4` explicitly.
 
-## 3. Causal Masking (Decoder-Only Attention)
-* Without a causal mask, PyTorch's `nn.TransformerEncoderLayer` allows future tokens to leak (bidirectional attention).
-* **Fix:** Generate an upper-triangular mask:
-  ```python
-  causal_mask = nn.Transformer.generate_square_subsequent_mask(seq_len, device=x.device)
-  out = layer(out, src_mask=causal_mask)
-  ```
+## GPU Training
+- Always call `model.to(device)` after creating the model. Without it, the model stays on CPU while data goes to GPU — PyTorch won't warn you, it just silently copies every batch back and forth.
+- Tesla T4 on Colab: ~5 min/epoch vs ~20 min on CPU.
 
-## 4. Dropout (Network Sabotage)
-* **`model.train()`**: Randomly deactivates activations during each batch to prevent overfitting/memorization.
-* **`model.eval()`**: Deactivates the dropout layer so the model runs at full capability for validation and generation.
-* **Parameter Details**: Controlled by the **`dropout`** argument in `nn.TransformerEncoderLayer` (default: `0.1`, representing a 10% dropout rate).
+## Dropout & train/eval mode
+- `model.train()` activates dropout (10% of connections randomly zeroed per batch) — forces the network to learn robust patterns.
+- `model.eval()` turns dropout off — full network capacity used for validation and generation.
+- The `dropout` parameter in `nn.TransformerEncoderLayer` defaults to `0.1`.
 
----
+## Sampling Strategies
 
-## 5. Greedy Decoding & The Stuttering Trap (Day 4)
-* **Greedy Search:** Always picks the token with the highest logit probability ($100\%$ confidence selection).
-* **The Repetitive Loop Flaw:** In your experiments with Swahili text generation, the model got stuck in an infinite, stuttering loop:
-  > *Example output:* `Senegal bao katika ushindi wao wa 3-1 dhidi ya Les Bleus Juni 16. 16, Juni Junadadadadadamii Mwa niwa ni nakakakakamba tishicha 26: yara ki kiyana Kinchama za zevingukukomama cha ya ya yakuhacheza mena`
-* **Why it happens:** Real language has uncertainty. If the model is 51% sure the next character is "d" and 49% sure it is "m", greedy decoding completely suppresses "m" every time, leading to rigid, robotic repeating patterns.
+**Greedy:** Always picks the highest logit. Produces coherent early output then locks into repetitive loops (e.g., `"Junadadadadadamii"`). The model is too rigid.
 
----
+**Temperature:** Divides logits by `T` before softmax. `T < 1` makes it more conservative, `T > 1` makes it more creative. Comes from the Boltzmann distribution in physics — low temp = particles freeze into predictable states, high temp = particles become chaotic.
 
-## 6. The Temperature Fix 🎲 & Physics Analogy (Day 5)
-* **The Fix:** Convert raw logits (which are unbounded, like 8.5, 2.1, or -4.0) into valid probability distributions (summing to 1.0) using the **Softmax** function, then sample using probabilities (`torch.multinomial`).
-* **Temperature Adjustment ($T$):** A scaling factor applied to raw logits:
-  $$p_i = \text{softmax}\left(\frac{\text{logits}}{T}\right)$$
-  * **$T = 1.0$ (Standard)**: Standard probabilities derived from the model's logits.
-  * **$T < 1.0$ (Cold)**: Exaggerates the differences between scores, pushing it closer to deterministic greedy search.
-  * **$T > 1.0$ (Hot)**: Shrinks the gap between logits. Increases randomness and creativity, giving "underdog" tokens a higher chance of selection.
+**Top-k:** Keep only the `k` highest probability tokens, zero out the rest.
 
-### 🌡️ The Boltzmann Distribution Connection
-This concept is adapted directly from **Statistical Mechanics** in physics:
-* **Low Temperature:** Particles freeze and lock into the lowest, most predictable energy state.
-* **High Temperature:** Particles get excited, move around randomly, and exist in many different, less probable states.
-* By treating raw model output logits as particle energy states, we can copy this thermodynamic equation to control text diversity.
+**Top-p (nucleus):** Keep the smallest set of tokens whose cumulative probability ≥ `p`. More adaptive than top-k.
 
----
+## Overfitting vs Underfitting — What I Actually Observed
 
-## 7. Understanding Gibberish & Physical Limitations
-While the model generates flawless initial grammatical Swahili (e.g., `Beki huyo aliendelea kuwa mmoja wa mashujaa wa sare ya bila`), it starts to degrade and hallucinate repetitive syllables midway through. This is not due to bad code, but the physical limitations of a mini LLM:
+| Data Size | What Happened |
+| :--- | :--- |
+| 8KB | Severe overfitting. Model memorized the file. Train 86%, val loss → 2.95 |
+| 1MB | Still overfitting. Train/val diverged within 2 epochs |
+| 3MB | Overfitting gone. Train ~66%, val ~65%, but **plateaued** — loss not moving |
 
-1. **Character-Level Tokenization Limitation**
-   * Currently, the vocabulary is individual letters (`CharTokenizer`). To spell "Shamrock", the engine must make 8 perfect, consecutive character predictions. Any single mistake (e.g., "Shamrik") derails the remaining sequence context.
-   * *The Fix:* Modern LLMs use **Subword Tokenization (BPE)** where chunks of words form a single token, reducing spelling errors.
+**Lesson:** It's the ratio between data size and model capacity that matters, not either alone.
 
-2. **Short Context Window (`max_len = 75`)**
-   * The sliding window is only 75 characters long (approx. 10 to 15 words). The engine has severe short-term memory loss. 
-   * As soon as "Shamrock" falls out of the 75-character window, the model literally forgets the initial context, causing it to hallucinate.
-   * *The Fix:* Modern LLMs have context windows of 8,000 to 128,000+ tokens.
+## The Plateau Problem (Current)
+Training is stuck at ~66% accuracy across epochs 3–6 on 3MB of data. This is **not** overfitting — train and val are close. The model has extracted everything it can at this size.
 
-3. **Small Model Capacity (Parameters)**
-   * With `d_model=128`, `num_heads=4`, and `num_layers=2`, the model is extremely lightweight. It lacks the mathematical depth to sustain long narratives or logic.
-   * *The Fix:* Scaling parameters (e.g., ChatGPT's 175 Billion parameters) allows deep concept representation.
+**Things that fight overfitting:** more data, dropout, weight decay (L2), early stopping.
+**Things that break a plateau:** bigger model (`d_model`), lower learning rate, learning rate schedule (cosine annealing).
 
----
+> **Note:** Adam already includes momentum internally. `weight_decay=1e-5` in the optimizer IS L2 regularization. Cosine annealing is a fancier version of manually dropping the learning rate — same idea, more controlled.
 
-## 8. GPU Training & The `model.to(device)` Trap
-* **Confirmed on Google Colab:** Tesla T4 GPU, ~5 min/epoch vs ~20 min/epoch on CPU — a 4x speedup.
-* **The Critical Bug:** `model.to(device)` must be called after creating the model. Without it, the model sits on CPU while data is on GPU. PyTorch silently copies every batch CPU ↔ GPU on every forward pass, making the GPU completely useless.
-  ```python
-  model = LanguageModel(...)
-  model = model.to(device)  # ← this line is mandatory
-  ```
-* **Confirming GPU is active:**
-  ```python
-  print(torch.cuda.is_available())     # True
-  print(torch.cuda.get_device_name(0)) # Tesla T4
-  ```
-
----
-
-## 9. The `dim_feedforward` Silent Default Trap (Root Cause of Overfitting)
-
-This is a critical PyTorch gotcha that caused overfitting on `swahili_clean.txt` (1MB):
-
-```python
-# ❌ WRONG — hidden 2048 default, regardless of d_model
-nn.TransformerEncoderLayer(d_model=128, nhead=4, batch_first=True, norm_first=True)
-
-# ✅ CORRECT — scale feedforward proportionally
-nn.TransformerEncoderLayer(
-    d_model=128,
-    nhead=4,
-    dim_feedforward=128 * 4,  # = 512, not 2048
-    dropout=0.1,
-    batch_first=True,
-    norm_first=True
-)
-```
-
-**Why it matters:**
-* `nn.TransformerEncoderLayer` defaults `dim_feedforward=2048` regardless of `d_model`.
-* Each layer's feedforward block is: Linear(`d_model` → 2048) + Linear(2048 → `d_model`).
-* At `d_model=128`, that's $2 \times 128 \times 2048 = 524,288$ params **per layer** — dwarfing the embeddings and attention blocks combined.
-* This massive hidden capacity causes the model to memorize the training corpus rather than learn generalization, even with a small dataset.
-
-**Overfitting signature observed in experiment:**
-
-| Epoch | Train Acc | Val Acc | Val Loss |
-| :---: | :---: | :---: | :---: |
-| 1 | 59.3% | 62.0% | 1.31 |
-| 2 | 71.9% | 60.8% | 1.69 |
-| 3 | 78%+ | 59.x% | 2.2+ |
-
-Train accuracy climbs while val loss climbs — textbook overfitting, caused entirely by the silent 2048 default.
-
----
-
-## 10. Epoch 1: Why Val Accuracy > Train Accuracy (Expected Behavior)
-
-This is **not a bug** — it is a structural artifact of how the training loop is ordered:
-
-1. **Training accuracy** = average correctness across **all 29,300 batches**, including the early batches where the model was still bad (epoch starts from scratch).
-2. **Validation accuracy** = measured **once, at the end of the epoch**, after all 29,300 weight updates have already happened.
-
-So validation always evaluates the "final, best-so-far" model, while training accuracy reflects the whole journey including the early terrible batches. This gap closes and usually flips (train > val) from epoch 2 onward as the model stabilizes. If val loss keeps rising while train accuracy keeps climbing, that's the overfitting signal.
-
+## Why Val Accuracy > Train Accuracy in Epoch 1
+Not a bug. Training accuracy is the average over all batches in the epoch, including the early terrible ones. Validation runs once at the very end, after all the weight updates. It's measuring a smarter model than the training average reflects.

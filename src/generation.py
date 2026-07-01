@@ -71,6 +71,65 @@ print(f"\nAll generations saved successfully to {file_path}")
 
 
 
+TOP_K = [5,20,50]
+
+
+all_results = []
+
+for k in TOP_K:
+    print(f"Generating with TOP K = {k}...")
+    
+    # Re-create a fresh starting tensor for every loop
+    x = torch.tensor([[start_id]], dtype=torch.long, device=device)
+    
+    # Generate
+    out_tensor = model.generate(x, max_new_chars=200, temperature=None,k=k,p=None)
+    final_ids = out_tensor.squeeze().cpu().tolist()
+    output = tokenizer.decode(final_ids)
+    
+    # Format the block
+    formatted_output = f"=== TOP K = {k} ===\nPrompt: 'S'\nOutput:\n{output}\n\n"
+    all_results.append(formatted_output)
+
+# Save to the specific experiments file
+file_path = "./experiments/topk_examples.txt"
+with open(file_path, "w", encoding="utf-8") as f:
+    f.writelines(all_results)
+
+print(f"\nAll generations saved successfully to {file_path}")
+
+
+TOP_P = [0.7,0.8,0.9]
+
+
+all_results = []
+
+for P in TOP_P:
+    print(f"Generating with TOP P = {P}...")
+    
+    # Re-create a fresh starting tensor for every loop
+    x = torch.tensor([[start_id]], dtype=torch.long, device=device)
+    
+    # Generate
+    out_tensor = model.generate(x, max_new_chars=200, temperature=None,k=None,p=P)
+    final_ids = out_tensor.squeeze().cpu().tolist()
+    output = tokenizer.decode(final_ids)
+    
+    # Format the block
+    formatted_output = f"=== TOP P = {P} ===\nPrompt: 'S'\nOutput:\n{output}\n\n"
+    all_results.append(formatted_output)
+
+# Save to the specific experiments file
+file_path = "./experiments/topp_examples.txt"
+with open(file_path, "w", encoding="utf-8") as f:
+    f.writelines(all_results)
+
+print(f"\nAll generations saved successfully to {file_path}")
+
+
+
+
+
 
 
 

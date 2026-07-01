@@ -1,0 +1,15 @@
+=== TOP K = 5 ===
+Prompt: 'S'
+Output:
+Star katika nchi ni za wachezaji wangene, Uholanzi, na Achenye alamusela a ta Ue a anembataremalalatela wanye he ya yaka wa wamepe ke. mbanishililena Pela Bringu ha Prinza benazawaina balao balilililao
+
+=== TOP K = 20 ===
+Prompt: 'S'
+Output:
+Schi tuatanayichezea mambili, Pepea Senegal RTS, wamblimGhana), nga, Ro Ro Jo na Uhepoas mbanas S), aranila areranakakanakaka y E, Ja ha ngambomihinanimbo banilo hi a ayo a yao kabambahehambila unia ka
+
+=== TOP K = 50 ===
+Prompt: 'S'
+Output:
+SRo ujukutanachami walioza kam pamuja kutoka kwa miye wachezaji wa muza wa adezatatalilinambali wa wa yine kahaka nililikinatato. wa, ha lia hitanarilimelayataka po, ha " m ka hilanialanianzilibaneli. 
+
