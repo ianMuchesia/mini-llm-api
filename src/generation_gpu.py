@@ -1,6 +1,6 @@
 import torch
-import json
 import torch.nn as nn
+import json
 from src.language_model import LanguageModel
 from src.tokenizer import CharTokenizer
 from src.dataset import LanguageModelDataset
@@ -8,13 +8,13 @@ from src.dataset import LanguageModelDataset
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tokenizer = CharTokenizer()
 
-tokenizer.load("./checkpoints/vocab.json")
+tokenizer.load("./checkpoints/gpu/vocab.json")
 
-dataset = LanguageModelDataset(filepath="data/swahili.txt",tokenizer=tokenizer)
+#dataset = LanguageModelDataset(filepath="data/swahili_clean.txt",tokenizer=tokenizer)
 
-model = LanguageModel(d_model=128,num_heads=4,num_layers=2,max_len=75,vocab_size=len(tokenizer.int2char))
+model = LanguageModel(d_model=256,num_heads=8,num_layers=2,max_len=100,vocab_size=len(tokenizer.int2char))
 
-model.load_state_dict(torch.load("./checkpoints/best_model.pt",map_location=device))
+model.load_state_dict(torch.load("./checkpoints/gpu/best_model.pt",map_location=device))
 
 model.eval()
 
@@ -37,7 +37,7 @@ print(output)
 
 
 
-with open("./experiments/greedy_examples.txt","w",encoding="utf-8") as f:
+with open("./experiments/gpu/greedy_examples.txt","w",encoding="utf-8") as f:
         f.write(output)
         
         
@@ -62,7 +62,7 @@ for t in temperatures:
     all_results.append(formatted_output)
 
 # Save to the specific experiments file
-file_path = "./experiments/temperature_examples.txt"
+file_path = "./experiments/gpu/temperature_examples.txt"
 with open(file_path, "w", encoding="utf-8") as f:
     f.writelines(all_results)
 
@@ -93,7 +93,7 @@ for k in TOP_K:
     all_results.append(formatted_output)
 
 # Save to the specific experiments file
-file_path = "./experiments/topk_examples.txt"
+file_path = "./experiments/gpu/topk_examples.txt"
 with open(file_path, "w", encoding="utf-8") as f:
     f.writelines(all_results)
 
@@ -121,25 +121,24 @@ for P in TOP_P:
     all_results.append(formatted_output)
 
 # Save to the specific experiments file
-file_path = "./experiments/topp_examples.txt"
+file_path = "./experiments/gpu/topp_examples.txt"
 with open(file_path, "w", encoding="utf-8") as f:
     f.writelines(all_results)
     
-    
-model = LanguageModel(d_model=128,num_heads=4,num_layers=2,max_len=75,vocab_size=len(tokenizer.int2char))
+  
 
-    
-with open("./experiments/config.json","w") as f:
+with open("./experiments/gpu/config.json","w") as f:
         config = {
             "vocab_size":len(tokenizer.int2char),
-            "d_model":128,
-            "num_heads":4,
+            "d_model":256,
+            "num_heads":8,
             "num_layers":2,
-            "max_len":75,
-            "model_path":"./checkpoints/best_model.pt",
-            "vocab_path":"./checkpoints/vocab.json"
+            "max_len":100,
+            "model_path":"./checkpoints/gpu/best_model.pt",
+            "vocab_path":"./checkpoints/gpu/vocab.json"
         }
         json.dump(config,f)
+            
 
 print(f"\nAll generations saved successfully to {file_path}")
 

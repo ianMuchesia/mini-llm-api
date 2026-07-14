@@ -1,0 +1,58 @@
+=== TOP K = 5 ===
+Prompt: 'S'
+Output:
+Sikiliza kama mwigizaji filamu baba yake wakati wa kujenga mji, nalinalelilikilibufilinanamanalamimwalena wa keta hiwa ka hwa, mura
+
+
+
+
+
+
+
+
+
+
+
+Kwanalelumumananya utalinamilumbingininumali
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== TOP K = 20 ===
+Prompt: 'S'
+Output:
+S ni kisiwa cha kidemokrasia kilichoanzisha katika nchi yake. Wakakajikisenalisenalarenakamjimwalilinanamarina ho, (Re to ni ws Dus
+
+
+
+
+
+
+
+
+
+
+
+154. ke 15:14 3 15:1
+
+7 pesile-UKisiTra Ma
+Jupiolaleninikw
+
+=== TOP K = 50 ===
+Prompt: 'S'
+Output:
+Serförman Gostan Telero wengine walioendeleza mauaji.
+Kasi ni abualalualualuatarumaluaralua kuaduatalumawajume me sika, no me hitanuma miwa nala kuniakakualisibwapakuhewelichalamwe inala ka.
+simiwa. is
+

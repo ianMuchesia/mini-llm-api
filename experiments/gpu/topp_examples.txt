@@ -1,0 +1,63 @@
+=== TOP P = 0.7 ===
+Prompt: 'S'
+Output:
+Shirikisho la Uswidi lililoanzishwa kwa karne kadhaa za kifedha yambambambakikikwakwambanambikaki amina zuko yo ko nisikisisika nisi ya. yo kungonamilandindinangwa, me.
+Nandhananilili mo zini (ma na, (
+
+=== TOP P = 0.8 ===
+Prompt: 'S'
+Output:
+San Youssee (Saigone), Sanduku n.k.
+
+15 Julai
+
+Tarehe 15 Julai nilaninilalalalilanilalinikanilinikanisioini ye
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+•o
+
+•
+• po
+
+
+
+
+
+
+
+
+
+
+Kwa Kwawa Kw
+Masa nananwangambawa
+Kawa
+Mawan
+
+
+
+
+
+
+
+=== TOP P = 0.9 ===
+Prompt: 'S'
+Output:
+She Club na Pierce). Huko walionekana kama ni kabila kubwa zaidi kwara, ta ka lilishisha nimushushikwanakwamakilisamjafaisangwabididi kua ka (musini ki sha ni ya i nia a byonimasanibidafulegilibalaliki
+

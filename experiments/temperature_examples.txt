@@ -1,21 +1,20 @@
 === T = 0.5 ===
 Prompt: 'S'
 Output:
-Stika na mashindano hayo yamechagua manyindingine kuichezea mchezendeababababea yea ye ye a alalalala talala ke ke ke ka ka katilatilatilatifa za ya ya ya za kana Camenanamamatitaperishishishi a wa ka 
+Sckuzaliwa nchi wakuzaliwa kama wa Uholanzi, Uholanzi. Wata mkatidau ishatatatani Lo nanifaifayo kanashis lisshama amasinama Ko zianga ziahikanga vina visha washa haka zirilo wababatana za Uhailaila wa
 
 === T = 1.0 ===
 Prompt: 'S'
 Output:
-Spopekia kuishuji. Kuwa mikuhu miaka 202, kutia tamu - huoni na hawao ko Kilo. atawamenge Wekanga Nia wa ke Ja " watachekajunanalalimezera mumuza. ka " wata" yashihuhilishikiananiria ka nia Uo ziatikat
+Stia kamriwashi walio za katika na Kombe la Dunia Kembili (2020, ngakasi nanonganau Uga Ha zi wa bonepanatatenabata abo wa. a. hikaratatananatata Uhai We 48. atu zi', Lo, hi: Ufenanakas Uhi beraramurel
 
 === T = 1.5 ===
 Prompt: 'S'
 Output:
-Se nchi kuichezea Ukami, "" Hulingwa waazi), swa wa Uhola Afrry  Iñanjititolananla". mula Amesemuhakataziala " Justaneki5S. nip 1. nia nujenkatenit)o8. Ro we rilanind heanas U), ha bo, AgikuninilaJeril
+S9d wa,tpote Fifa ilipuruia kiwakilisha Li–cheza kadtai Fifa ilipopoa in, anyoa a, anafieitaoshuIbao ikelalilianililariujujuheli. Ufumususia ki. –engandangataseloni ngalalala hiwa U Kiwato nzB" amararo
 
 === T = 2.0 ===
 Prompt: 'S'
 Output:
-Su S"uhuo covenlt, afuanDutirafapukianana sa
-Ha Fre," 4NE4, anaswasitxelelta SRomaAgaHinasalantR w' lio, ujujengenfijanambe walamala. Ina sa mba baS)o"Sin48o.Halapopuhugri Fo kaliasuAga Ko, ze," a anez
+S4jgunsherFfu.l TSepardb% akimechegumaji kuchewa ya KoDbili4) mYinelilikishaki wa. Qe2019dangatandatakNina dheny he, h zisin, inhatalimwara awejitipongaRonena (a hel vvachalalilo, nijezaji SezammUtani 
 
