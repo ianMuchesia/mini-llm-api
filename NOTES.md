@@ -104,3 +104,46 @@ Train and val stuck at ~66%/65% across epochs 3–6. Not overfitting — they're
 
 ## 14. Why Val Accuracy > Train Accuracy in Epoch 1
 Not a bug. Training accuracy is the **average over all batches** in the epoch — including the early ones where the model was still randomly initialized and performing terribly. Validation runs **once, at the very end**, after all the weight updates from all 29,300 batches. It's measuring the "best-so-far" model, while training accuracy reflects the whole journey from bad to good. This gap closes from epoch 2 onward. If val loss starts rising while train accuracy keeps climbing, that's the overfitting signal.
+
+You got it. Let’s break down the exact mechanics of what is happening under the hood when you use both `COPY` in your `Dockerfile` and `volumes` in your `docker-compose.yml`.
+
+This is a core MLOps concept called **environment parity** — maintaining the exact same architecture for both local development and production, but optimizing how files are handled in each state.
+
+Here is the deep dive into how these two instructions interact and why you engineer it this way.
+
+## 1. The `Dockerfile` (`COPY`): The Immutable Production Artifact
+
+When you run `docker build`, Docker executes the `COPY` instructions step-by-step. It physically duplicates your host files and bakes them into read-only layers inside the Docker image.
+
+* **The Goal:** True portability.
+* **The Result:** You can push this image to Docker Hub, an AWS Elastic Container Registry, or a colleague's laptop. When they run `docker run mini-llm-api`, the API spins up immediately. They do not need to clone your Git repo, and they do not need to download the `best_model.pt` file separately. The image contains 100% of the DNA needed to run.
+
+**The ML Catch:** Model checkpoints are heavy. If `best_model.pt` is 1.5GB, your resulting Docker image will be at least 1.5GB larger. Pushing and pulling this image across the internet takes time and costs bandwidth.
+
+## 2. The `docker-compose.yml` (`volumes`): The Local Development Override
+
+When you spin up the container using Docker Compose, the `volumes` directive essentially punches a hole through the container’s isolated filesystem and connects it directly to your host machine's hard drive.
+
+* **The Shadowing Effect:** Because you mounted `./src:/app/src`, the container **completely ignores** the `src/` folder that was baked into it during the `COPY` step. Instead, it looks directly at the `src/` folder on your local machine.
+* **The Developer Experience:** If you find a bug in `generation.py` and fix it in VS Code, you just hit save. Because Uvicorn is running with the `--reload` flag, it detects the file change through the volume mount and restarts the API instantly.
+
+If you *only* relied on the `COPY` command without volumes, you would have to stop the container, run a 2-minute `docker build` to bake the new code into a new image, and run it again. Volumes save you hours of waiting over a development cycle.
+
+## 3. Why We Comment Out Volumes in Production
+
+In your previous projects, you likely commented out the `volumes` section (or used a separate `docker-compose.prod.yml`) when deploying to a live server. Here is why:
+
+If you deploy to an AWS EC2 instance and leave `volumes: - ./src:/app/src` active, the container will look for a local `./src` folder on the AWS server. But because you only deployed the Docker image (and didn't manually transfer your source code files to the EC2 hard drive), that folder doesn't exist on the host. The container will crash or run empty.
+
+## The Strategy Summary
+
+By writing your files the way you did, you achieved the perfect hybrid:
+
+1. **You build with `COPY**` so the image is theoretically ready to be shipped anywhere.
+2. **You run locally with `volumes**` so you can tweak your code and swap model checkpoints dynamically without rebuilding a 2GB image every time.
+
+---
+
+Since your `Dockerfile` and Compose files are structurally sound, the next step in the Week 4 syllabus is to actually build the image and see how big it is with the PyTorch CPU wheels and your checkpoint inside.
+
+Are you ready to run the `docker build -t mini-llm-api .` command in your terminal, or do you need to create a `.dockerignore` file first to prevent Docker from copying unwanted junk (like `__pycache__` or virtual environments) into the image?

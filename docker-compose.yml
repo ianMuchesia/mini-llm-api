@@ -1,0 +1,16 @@
+
+version: '3.8'
+
+
+services:
+  inference-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./experiments:/app/experiments
+      - ./src:/app/src
+ 
+ 
+ 
