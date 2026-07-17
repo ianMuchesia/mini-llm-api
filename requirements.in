@@ -1,0 +1,14 @@
+# Web & API Core
+fastapi
+uvicorn
+pydantic
+
+# Scientific Stack & Visualization (Required for your experiments/notebooks!)
+numpy
+pandas
+matplotlib
+seaborn
+
+# Data Processing & Utilities
+wikiextractor
+requests

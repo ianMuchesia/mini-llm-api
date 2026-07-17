@@ -32,7 +32,7 @@
 
 ## 6. The `dim_feedforward` Silent Default Trap
 - `nn.TransformerEncoderLayer` defaults `dim_feedforward=2048` regardless of what `d_model` you pass.
-- At `d_model=128`: each layer has two linear projections of size 128→2048 and 2048→128, totalling 2 × 128 × 2048 = **524,288 parameters per layer** — far larger than the embeddings and attention combined.
+- At `d_model=128`: each layer has two linear projections 128→2048 and 2048→128, totalling 2 × 128 × 2048 = **524,288 params per layer** — far larger than the embeddings and attention combined.
 - This was the root cause of overfitting on 1MB data. The feedforward blocks had way more capacity than the data could support, so they memorized instead of generalizing.
 - Fix: explicitly set `dim_feedforward=d_model * 4`:
   ```python
@@ -61,7 +61,7 @@
 
 ## 9. Top-k Sampling
 - Keep only the `k` highest-probability tokens and zero out all others (set to `-inf` before softmax).
-- The mask logic: sort tokens by score descending, mark everything after rank `k` as True (meaning "remove this"), then apply `-inf` to those positions. Force the #1 token mask to always be `False` so the engine never divides by zero or crashes on an all-masked distribution.
+- The mask logic: sort tokens by score descending, mark everything after rank `k` as True (meaning "remove this"), then apply `-inf` to those positions. Force the #1 token mask to always be `False` so the engine never crashes on an all-masked distribution.
 - `k=5` → conservative, `k=50` → more diverse.
 
 ## 10. Top-p (Nucleus) Sampling
@@ -87,63 +87,71 @@ The model generates grammatically correct Swahili early on, then degrades. This 
 
 The pattern is clean: as data grew, overfitting shrank. At 3MB the model stopped memorizing, but hit a capacity ceiling instead.
 
-**Rule of thumb (approximate):**
+**Rule of thumb:**
 - Less data → more likely to overfit (model memorizes)
 - Too few epochs → underfitting (model hasn't learned yet)
-- But what actually matters is the **ratio** between data size and model capacity. A huge model on tiny data will always overfit, even with few epochs.
+- What actually matters is the **ratio** between data size and model capacity. A huge model on tiny data will always overfit, even with few epochs.
 
 ## 13. The Plateau & What To Do About It
 Train and val stuck at ~66%/65% across epochs 3–6. Not overfitting — they're moving together. The model has extracted everything it can at this size.
 
-**Things that fight overfitting:** more data, dropout, weight decay (L2 regularization), early stopping.
-**Things that break a plateau:** larger `d_model`, lower learning rate, learning rate schedule.
-
+- **Things that fight overfitting:** more data, dropout, weight decay (L2 regularization), early stopping.
+- **Things that break a plateau:** larger `d_model`, lower learning rate, learning rate schedule.
 - **Momentum:** already included in Adam internally. You don't need to add it.
-- **L2 regularization:** this is `weight_decay=1e-5` already in `optim.Adam(...)`. It restricts model weights from growing too large. Fights overfitting, not plateaus — using it to break a plateau would make things worse.
-- **Cosine annealing:** a learning rate schedule that gradually decreases `lr` following a cosine curve. Good for settling into a better minimum after the model gets close. A simpler first test is just manually dropping `lr` from `0.001` to `0.0003`.
+- **L2 regularization:** this is `weight_decay=1e-5` already in `optim.Adam(...)`. Fights overfitting, not plateaus — using it to break a plateau would make things worse.
+- **Cosine annealing:** a learning rate schedule that gradually decreases `lr` following a cosine curve. A simpler first test is just dropping `lr` from `0.001` to `0.0003`.
 
 ## 14. Why Val Accuracy > Train Accuracy in Epoch 1
-Not a bug. Training accuracy is the **average over all batches** in the epoch — including the early ones where the model was still randomly initialized and performing terribly. Validation runs **once, at the very end**, after all the weight updates from all 29,300 batches. It's measuring the "best-so-far" model, while training accuracy reflects the whole journey from bad to good. This gap closes from epoch 2 onward. If val loss starts rising while train accuracy keeps climbing, that's the overfitting signal.
+Not a bug. Training accuracy is the **average over all batches** in the epoch — including the early ones where the model was still randomly initialized and performing terribly. Validation runs **once, at the very end**, after all the weight updates. It's measuring the "best-so-far" model, while training accuracy reflects the whole journey from bad to good. This gap closes from epoch 2 onward. If val loss starts rising while train accuracy keeps climbing, that's the overfitting signal.
 
-You got it. Let’s break down the exact mechanics of what is happening under the hood when you use both `COPY` in your `Dockerfile` and `volumes` in your `docker-compose.yml`.
+## 15. Docker & the COPY vs Volumes Pattern
 
-This is a core MLOps concept called **environment parity** — maintaining the exact same architecture for both local development and production, but optimizing how files are handled in each state.
+### `COPY` in Dockerfile — The Production Artifact
+When you run `docker build`, the `COPY` instructions physically bake your files into the image as read-only layers. The image becomes self-contained and portable — you can push it to Docker Hub or deploy it to a cloud server and it carries everything it needs.
 
-Here is the deep dive into how these two instructions interact and why you engineer it this way.
+The catch: if `best_model.pt` is 1.5GB, the image gets 1.5GB heavier. Pushing that across the internet takes time.
 
-## 1. The `Dockerfile` (`COPY`): The Immutable Production Artifact
+### `volumes` in docker-compose.yml — The Dev Override
+When you run `docker-compose up`, the `volumes` directive punches a hole through the container's filesystem and mounts your local directory directly. The container **ignores** the baked-in `COPY` version of those folders and reads your live files instead.
 
-When you run `docker build`, Docker executes the `COPY` instructions step-by-step. It physically duplicates your host files and bakes them into read-only layers inside the Docker image.
+Combined with Uvicorn's `--reload` flag, this means you save a file in VS Code and the API restarts automatically — no rebuild needed.
 
-* **The Goal:** True portability.
-* **The Result:** You can push this image to Docker Hub, an AWS Elastic Container Registry, or a colleague's laptop. When they run `docker run mini-llm-api`, the API spins up immediately. They do not need to clone your Git repo, and they do not need to download the `best_model.pt` file separately. The image contains 100% of the DNA needed to run.
+```yaml
+volumes:
+  - ./checkpoints:/app/checkpoints   # swap model weights without rebuilding
+  - ./src:/app/src                   # live code reload during development
+```
 
-**The ML Catch:** Model checkpoints are heavy. If `best_model.pt` is 1.5GB, your resulting Docker image will be at least 1.5GB larger. Pushing and pulling this image across the internet takes time and costs bandwidth.
+### Why You Comment Out Volumes in Production
+If you deploy to a cloud server with `volumes: - ./src:/app/src` still active, the container looks for a `./src` folder on the remote server. Since you only deployed the image (not the source files), that folder doesn't exist — the container crashes or runs empty. In production, you strip the volumes and rely entirely on `COPY`.
 
-## 2. The `docker-compose.yml` (`volumes`): The Local Development Override
+## 16. `requirements.in` vs `pip freeze` for Docker
+`pip freeze > requirements.txt` dumps everything from your training environment, including heavy GPU libraries like `nvidia-cublas` that have no place in a CPU inference container. The fix is `pip-tools`:
 
-When you spin up the container using Docker Compose, the `volumes` directive essentially punches a hole through the container’s isolated filesystem and connects it directly to your host machine's hard drive.
+- Write only top-level API dependencies in `requirements.in` (fastapi, uvicorn, pydantic)
+- Run `pip-compile requirements.in` to generate a clean, locked `requirements.txt`
+- PyTorch is handled separately in the Dockerfile with the CPU wheel URL so it never gets mixed up with GPU training packages
 
-* **The Shadowing Effect:** Because you mounted `./src:/app/src`, the container **completely ignores** the `src/` folder that was baked into it during the `COPY` step. Instead, it looks directly at the `src/` folder on your local machine.
-* **The Developer Experience:** If you find a bug in `generation.py` and fix it in VS Code, you just hit save. Because Uvicorn is running with the `--reload` flag, it detects the file change through the volume mount and restarts the API instantly.
+## 17. Streaming Generation (`/generate_stream`)
+Instead of waiting for the entire output to finish before returning it to the client, the `stream()` method on the model uses `yield` to emit one token at a time as a Python generator. FastAPI wraps this in a `StreamingResponse` with `media_type="text/event-stream"`. The client receives characters as they are generated, in real time — the same pattern used by ChatGPT's typing effect.
 
-If you *only* relied on the `COPY` command without volumes, you would have to stop the container, run a 2-minute `docker build` to bake the new code into a new image, and run it again. Volumes save you hours of waiting over a development cycle.
+```python
+def stream(self, x, max_new_chars, temperature=None, k=None, p=None):
+    self.eval()
+    with torch.no_grad():
+        for _ in range(max_new_chars):
+            # ... sampling logic ...
+            x = torch.cat((x, samples), dim=1)
+            yield samples   # ← emits one token at a time
+```
 
-## 3. Why We Comment Out Volumes in Production
-
-In your previous projects, you likely commented out the `volumes` section (or used a separate `docker-compose.prod.yml`) when deploying to a live server. Here is why:
-
-If you deploy to an AWS EC2 instance and leave `volumes: - ./src:/app/src` active, the container will look for a local `./src` folder on the AWS server. But because you only deployed the Docker image (and didn't manually transfer your source code files to the EC2 hard drive), that folder doesn't exist on the host. The container will crash or run empty.
-
-## The Strategy Summary
-
-By writing your files the way you did, you achieved the perfect hybrid:
-
-1. **You build with `COPY**` so the image is theoretically ready to be shipped anywhere.
-2. **You run locally with `volumes**` so you can tweak your code and swap model checkpoints dynamically without rebuilding a 2GB image every time.
-
----
-
-Since your `Dockerfile` and Compose files are structurally sound, the next step in the Week 4 syllabus is to actually build the image and see how big it is with the PyTorch CPU wheels and your checkpoint inside.
-
-Are you ready to run the `docker build -t mini-llm-api .` command in your terminal, or do you need to create a `.dockerignore` file first to prevent Docker from copying unwanted junk (like `__pycache__` or virtual environments) into the image?
+The API route:
+```python
+@app.post("/generate_stream")
+async def generate_stream(request: PredictionRequest):
+    def token_generate():
+        for token_tensor in model.stream(x, ...):
+            token_id = token_tensor.squeeze().item()
+            yield tokenizer.decode([token_id])
+    return StreamingResponse(token_generate(), media_type="text/event-stream")
+```

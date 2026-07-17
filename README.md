@@ -1,46 +1,68 @@
-# Mini-LLM: Character Language Model & Sampling
+# mini-llm-api
 
-A lightweight PyTorch GPT-style character-level Transformer, with greedy, temperature, top-k, and top-p text generation sampling strategies.
-
----
-
-## 🛠️ Project Structure
-* 📂 **`src/`** — Model (`language_model.py`), Dataset (`dataset.py`), Trainer (`trainer.py`), Generation (`generation.py`), Wikipedia pipeline (`harvest_sw.py`, `extract_swwiki.py`, `clean_wikitext.py`).
-* 📂 **`experiments/`** — Sampling outputs: `greedy_examples.txt`, `temperature_examples.txt`, `topk_examples.txt`, `topp_examples.txt`.
-* 📂 **`math-notes/`** — Parameter counting and FLOP estimation analyses.
-* 📂 **`data/`** — Training corpus (Swahili Wikipedia clean text).
-* 📜 **[NOTES.md](NOTES.md)** — Conceptual study guide & experiment log.
+A GPT-style character-level language model trained on Swahili Wikipedia, with a FastAPI streaming inference server. Built over 3 weeks as a ground-up study of transformers, sampling strategies, and MLOps deployment.
 
 ---
 
-## 📐 Math to PyTorch Mapping
-* **Token & Learned Position Embeddings** → `nn.Embedding`
-* **Causal Attention** → `nn.TransformerEncoderLayer` + upper-triangular mask
-* **Temperature Sampling** → $p_i = \text{softmax}(\text{logits} / T)$ via `torch.multinomial`
-* **Top-p (Nucleus)** → sort by probability, cumulative sum ≥ p, zero out the rest
+## What's Inside
+
+| Folder | Contents |
+| :--- | :--- |
+| `src/` | Model, tokenizer, dataset, trainer, generation scripts, Wikipedia pipeline |
+| `app/` | FastAPI server with `/generate` and `/generate_stream` endpoints |
+| `experiments/` | Sampling outputs from CPU and GPU runs |
+| `math-notes/` | Parameter count analysis (~418K params) and FLOP estimation (~1.71 GFLOPs) |
+| `checkpoints/` | Saved model weights (`best_model.pt`) and vocab |
 
 ---
 
-## 💻 Quick Start
+## Model Architecture
+- **Type:** Decoder-only Transformer (GPT-style)
+- **Tokenization:** Character-level (`CharTokenizer`)
+- **Embeddings:** Learned token + learned positional (`nn.Embedding`)
+- **Attention:** Causal (upper-triangular mask), `nn.TransformerEncoderLayer`
+- **Config:** `d_model=128`, `num_heads=4`, `num_layers=2`, `max_len=75`
+- **Training data:** Swahili Wikipedia (~5MB clean text)
 
-### Train
-```python
-from src.language_model import LanguageModel
-model = LanguageModel(d_model=128, num_heads=4, num_layers=2, max_len=75, vocab_size=100)
-model = model.to(device)  # critical — model must be on GPU
+## Sampling Strategies Implemented
+- **Greedy** — always picks the top token (fast, but stutters)
+- **Temperature** — scales logits before softmax; `T<1` = conservative, `T>1` = creative
+- **Top-k** — keeps only the `k` highest-probability tokens
+- **Top-p (nucleus)** — keeps the smallest set of tokens covering cumulative probability ≥ `p`
+
+---
+
+## API Endpoints
+
+```
+POST /generate         → returns full generated text
+POST /generate_stream  → streams tokens one-by-one (Server-Sent Events)
+GET  /health           → health check
 ```
 
-### Generate
-```python
-# Greedy
-out = model.generate(x, max_new_chars=200)
-
-# Temperature
-out = model.generate(x, max_new_chars=200, temperature=0.8)
+**Request body:**
+```json
+{ "prompt": "Habari za", "max_length": 200, "temperature": 0.8, "top_k": 40 }
 ```
 
-### Run
+---
+
+## Running Locally
+
 ```bash
-python src/trainer.py    # trains with early stopping, saves best_model.pt
-python src/generation.py # runs all 4 sampling strategies
+# Install dependencies
+pip install -r requirements.txt
+
+# Start API server
+uvicorn app.main:app --reload --port 8000
 ```
+
+```bash
+# Docker (development)
+docker-compose up
+```
+
+---
+
+## Study Notes
+See [NOTES.md](NOTES.md) for a full conceptual breakdown of everything learned: causal masking, sampling math, overfitting experiments, Docker patterns, and streaming generation.
